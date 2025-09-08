@@ -40,10 +40,5 @@ Change Threshold, Blur Amount and Pixel to MM Ratio and click Process Image
 
 ---
 
-## Setup Instructions
-
-### 1. Clone the repository
-
-```bash
-git clone <repository_url>
-cd object-dimension-measurement
+## License
+This project is for educational and demonstration purposes. Feel free to adapt and extend!
