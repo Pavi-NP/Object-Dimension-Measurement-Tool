@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Object Dimension Measurement Tool</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Optional: Add icons to prevent 404 errors -->
+    <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}">
+    <link rel="apple-touch-icon" href="{{ url_for('static', filename='apple-touch-icon.png') }}">
+
+    <style>
+        .canvas-container {
+            position: relative;
+            display: inline-block;
+        }
+        .loading {
+            display: none;
+        }
+        .loading.active {
+            display: inline-flex;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 dark:bg-gray-900 min-h-screen">
+    <div class="container mx-auto px-4 py-8">
+        <h1 class="text-3xl font-bold text-center mb-8 text-gray-800 dark:text-white">
+            Object Dimension Measurement Tool
+        </h1>
+
+        <div class="max-w-4xl mx-auto">
+            <!-- Camera Section -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-6">
+                <h2 class="text-xl font-semibold mb-4 text-gray-800 dark:text-white">Camera Capture</h2>
+                <div class="flex flex-col items-center space-y-4">
+                    <video id="video" class="w-full max-w-md border rounded-lg" autoplay playsinline></video>
+                    <div class="flex space-x-4">
+                        <button id="startCamera" class="px-6 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium">
+                            Start Camera
+                        </button>
+                        <button id="captureImage" class="px-6 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg font-medium" disabled>
+                            Capture Image
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- File Upload Section -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-6">
+                <h2 class="text-xl font-semibold mb-4 text-gray-800 dark:text-white">Upload Image</h2>
+                <div class="flex flex-col items-center space-y-4">
+                    <input type="file" id="fileInput" accept="image/*" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" />
+                    <button id="uploadProcess" class="px-6 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-medium" disabled>
+                        Upload & Process
+                    </button>
+                </div>
+            </div>
+
+            <!-- Processing Controls -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-6">
+                <h2 class="text-xl font-semibold mb-4 text-gray-800 dark:text-white">Processing Controls</h2>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Threshold: <span id="thresholdValue">100</span>
+                        </label>
+                        <input type="range" id="threshold" min="50" max="200" value="100" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer" />
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Blur Amount: <span id="blurValue">3</span>
+                        </label>
+                        <input type="range" id="blur" min="1" max="10" value="3" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer" />
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Pixel to MM Ratio
+                        </label>
+                        <input type="number" id="pixelRatio" value="0.2645833" step="0.001" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white" />
+                    </div>
+                </div>
+                <button id="processImage" class="mt-4 px-6 py-2 bg-purple-500 hover:bg-purple-600 text-white rounded-lg font-medium" disabled>
+                    <span class="loading active" id="loadingSpinner">
+                        <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Processing...
+                    </span>
+                    <span id="processText">Process Image</span>
+                </button>
+            </div>
+
+            <!-- Image Processing Display -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+                <h2 class="text-xl font-semibold mb-4 text-gray-800 dark:text-white">Results</h2>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <!-- Original Image -->
+                    <div>
+                        <h3 class="text-lg font-medium mb-2 text-gray-700 dark:text-gray-300">Original Image</h3>
+                        <div class="canvas-container border rounded-lg overflow-hidden">
+                            <canvas id="originalCanvas" class="max-w-full h-auto"></canvas>
+                        </div>
+                    </div>
+                    <!-- Processed Image -->
+                    <div>
+                        <h3 class="text-lg font-medium mb-2 text-gray-700 dark:text-gray-300">Processed Result</h3>
+                        <div class="canvas-container border rounded-lg overflow-hidden">
+                            <img id="processedImage" class="max-w-full h-auto border rounded-lg" style="display:none;" />
+                        </div>
+                    </div>
+                </div>
+                <!-- Measurement Results -->
+                <div id="results" class="mt-6 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg hidden">
+                    <h3 class="text-lg font-semibold mb-2 text-gray-800 dark:text-white">Measurement Results</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
+                        <div class="bg-white dark:bg-gray-800 p-4 rounded-lg">
+                            <div class="text-2xl font-bold text-blue-600" id="diameter">--</div>
+                            <div class="text-sm text-gray-600 dark:text-gray-400">Diameter (mm)</div>
+                        </div>
+                        <div class="bg-white dark:bg-gray-800 p-4 rounded-lg">
+                            <div class="text-2xl font-bold text-green-600" id="category">--</div>
+                            <div class="text-sm text-gray-600 dark:text-gray-400">Category</div>
+                        </div>
+                        <div class="bg-white dark:bg-gray-800 p-4 rounded-lg">
+                            <div class="text-2xl font-bold text-purple-600" id="pixelRadius">--</div>
+                            <div class="text-sm text-gray-600 dark:text-gray-400">Radius (pixels)</div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Error Display -->
+                <div id="errorDisplay" class="mt-6 p-4 bg-red-50 dark:bg-red-900 rounded-lg hidden">
+                    <h3 class="text-lg font-semibold mb-2 text-red-800 dark:text-red-200">Error</h3>
+                    <p id="errorMessage" class="text-red-600 dark:text-red-300"></p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>
